@@ -56,12 +56,9 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"strings"
+	"etf-data-extractor/api/routes"
 
-	"github.com/gocolly/colly"
-	"github.com/xuri/excelize/v2"
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -70,60 +67,8 @@ const (
 )
 
 func main() {
-	fName := "Crypto.xlsx"
-	file := excelize.NewFile()
+	router := gin.Default()
 
-	// Set the sheet name
-	err := file.SetSheetName("Sheet1", SheetName)
-	if err != nil {
-		log.Fatal("Not able to Set Sheet Name")
-	}
-
-	headers := []string{"Name", "Symbol", "Market Cap (USD)", "Price (USD)"}
-
-	// Write headers to the Excel sheet
-	for colIndex, colName := range headers {
-		file.SetCellValue(SheetName, fmt.Sprintf("%s%d", string(rune(65+colIndex)), 1), colName)
-	}
-
-	row := 2 // Start from row 2 for data
-
-	// Instantiate default collector
-	c := colly.NewCollector()
-
-	// Visit the first page and extract data
-	visitPage := func(url string) {
-		c.OnHTML("tbody tr", func(e *colly.HTMLElement) {
-			// Write data to Excel sheet
-			file.SetCellValue(SheetName, fmt.Sprintf("A%d", row), e.ChildText(".cmc-table__column-name"))
-			file.SetCellValue(SheetName, fmt.Sprintf("B%d", row), e.ChildText(".cmc-table__cell--sort-by__symbol"))
-			file.SetCellValue(SheetName, fmt.Sprintf("C%d", row), e.ChildText(".cmc-table__cell--sort-by__market-cap"))
-			file.SetCellValue(SheetName, fmt.Sprintf("D%d", row), e.ChildText(".cmc-table__cell--sort-by__price"))
-			row++
-		})
-
-		c.Visit(url)
-	}
-
-	// Initial page scrape
-	visitPage(BaseURL)
-
-	// Callback for pagination links
-	c.OnHTML(".pagination-container > .paginationBottom > .paginations a", func(e *colly.HTMLElement) {
-		link := e.Attr("href")
-		if strings.HasPrefix(link, "/all/views/all/") {
-			visitPage("https://coinmarketcap.com" + link)
-		}
-	})
-
-	// Wait for all scraping to finish
-	c.Wait()
-
-	// Save the Excel file
-	if err := file.SaveAs(fName); err != nil {
-		fmt.Println("Error saving Excel file:", err)
-		return
-	}
-
-	log.Printf("Scraping finished, check file %q for results\n", fName)
+	routes.Register(router)
+	router.Run("localhost:8080")
 }

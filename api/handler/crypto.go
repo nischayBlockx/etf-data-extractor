@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gocolly/colly"
@@ -61,6 +62,9 @@ func FetchCryptoData() gin.HandlerFunc {
 		}
 
 		log.Printf("Scraping finished, check file %q for results\n", fName)
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"message": "Scraping finished",
+		})
 	}
 
 }
